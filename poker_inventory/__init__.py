@@ -84,6 +84,46 @@ class Poker(Resource):
         pointer1 = 0
         pointer2 = 1
 
+        # Check for a straight
+        straight_check = [(card, cards[card]) for card in table["community"]]
+        straight_check.append((table["player1"][0], cards[table["player1"][0]]))
+        straight_check.append((table["player1"][1], cards[table["player1"][1]]))
+        straight_check.sort(key=lambda x: x[1], reverse=True)
+        straight_counter = 1
+        index = 0
+        straight_list = []
+        while index < len(straight_check):
+            if straight_counter == 5:
+                break
+            
+            if index == len(straight_check) - 1:
+                if straight_check[index - 1][1] - 1 == straight_check[index][1]:
+                    straight_counter += 1
+                    straight_list.append(straight_check[index][0])
+            if index != len(straight_check) - 1:
+                if straight_check[index - 1][1] - 1 == straight_check[index][1]:
+                    straight_counter += 1
+                    straight_list.append(straight_check[index][0])
+                else:
+                    straight_counter = 1
+                    straight_list = []
+                    straight_list.append(straight_check[index][0])
+            print(straight_check[index][1], straight_counter)
+            index += 1
+        # If straight is found return it
+        if straight_counter == 5:
+            return {"Straight": straight_list}
+        else: # One final straight check for the wheel straight (A,2,3,4,5)
+            if straight_check[0][1] == 14 and straight_check[-1][1] == 2:
+                if straight_check[-2][1] == 3 and straight_check[-3][1] == 4 and straight_check[-4][1] == 5:
+                    wheel = []
+                    wheel.append(straight_check[0][0])
+                    wheel.append(straight_check[-1][0])
+                    wheel.append(straight_check[-2][0])
+                    wheel.append(straight_check[-3][0])
+                    wheel.append(straight_check[-4][0])
+                    return {"Straight": wheel}
+
         # Check the board for paired cards
         while pointer1 < len(table["community"]) - 1:
             card1 = table["community"][pointer1]
@@ -118,11 +158,11 @@ class Poker(Resource):
             all_cards.sort(key=lambda x: x[1], reverse=True)
             all_cards.pop()
             all_cards.pop()
-            response = {
+            return {
                 "all_cards": all_cards
             }
 
-        # If a pair is detected we return the list of pairs with the next 3 best cards
+        # If the paired_cards list has any values we have to check what the hand is
         else:
             rest_of_cards = []
             paired_cards_set = set(paired_cards)
@@ -130,15 +170,49 @@ class Poker(Resource):
             all_cards.append((table["player1"][1], cards[table["player1"][1]]))
             all_cards = [card for card in all_cards if card[0] not in paired_cards_set]
             all_cards.sort(key=lambda x: x[1], reverse=True)
-            for index, card in enumerate(all_cards):
-                if index == 0 or index == 1 or index == 2:
-                    rest_of_cards.append(card[0])
-            response = {
-            "paired_cards": paired_cards,
-            "rest_of_cards": rest_of_cards
-            }
+            # Check to see if there is a single pair
+            if len(paired_cards) == 2:
+                for index, card in enumerate(all_cards):
+                    if index == 0 or index == 1 or index == 2:
+                        rest_of_cards.append(card[0])
+                return {
+                    "pair": paired_cards,
+                    "rest of cards": rest_of_cards
+                }
+            # Check to see if user has trips
+            if len(paired_cards_set) == 3:
+                rest_of_cards.append(all_cards[0][0])
+                rest_of_cards.append(all_cards[1][0])
+                return {
+                    "trips": list(paired_cards_set),
+                    "rest of cards": rest_of_cards
+                }
+            # Check for quads
+            if len(paired_cards_set) == 4:
+                rest_of_cards.append(all_cards[0][0])
+                return {
+                    "quads": list(paired_cards_set),
+                    "rest of cards": rest_of_cards
+                }
+            # Check for Full House
+            if len(paired_cards_set) == 5: # Check to make sure the 5 best cards make up the full house
+                return {"Full House": list(paired_cards_set)}
+            if len(paired_cards_set) == 7: # Get rid of the worst pair and return the proper full house
+                best_house = [(card, cards[card]) for card in paired_cards_set]
+                best_house.sort(key=lambda x: x[1], reverse=True)
+                best_house.pop()
+                best_house.pop()
+                full_house = [card[0] for card in best_house]
+                return {"Full House": full_house}
+            # Check for two pair
+            if len(paired_cards) == 4:
+                rest_of_cards.append(all_cards[0][0])
+                return {
+                "paired_cards": paired_cards,
+                "rest_of_cards": rest_of_cards
+                }
 
-        return response
+        return {"Testing": list(paired_cards_set)}
 
     
 api.add_resource(Poker, "/<string:hole1>_<string:hole2>/<string:flop1>_<string:flop2>_<string:flop3>_<string:turn>_<string:river>")
