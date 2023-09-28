@@ -108,7 +108,7 @@ class Poker(Resource):
         # If a flush is present we call this to check the type of flush
         def check_flush_type(flush_arr):
             sf_tracker = 0
-            for i in range(len(flush_arr) - 1): # This loop tells us if we have a straight with out flush
+            for i in range(len(flush_arr) - 1): # This loop tells us if we have a straight in our flush list
                 if cards[flush_arr[i]][0] - 1 == cards[flush_arr[i+1]][0]:
                     sf_tracker += 1
             if sf_tracker == 4 and cards[flush_arr[0]][0] == 14: # Check for royal flush
@@ -134,6 +134,7 @@ class Poker(Resource):
         superior hands (Quads, Full House) before return the flush as the best possible hand
         """
         
+        # Check for Four of a Kind
         def quad_check(all_cards):
             quad_dict = {}
             for c in all_cards:
@@ -149,10 +150,12 @@ class Poker(Resource):
                             return {"Four of a Kind": v}
             return {"No Four of a Kind": "None Found"}
         
+        # If Four of a Kind is found we can return that
         quads = quad_check(seven_cards)
         if "Four of a Kind" in quads:
             return quads
         
+        # Check for Full House
         def full_house_check(card_arr):
             full_dict = {}
             for c in card_arr:
@@ -172,12 +175,41 @@ class Poker(Resource):
                             return {"Full House": v}
             return {"No Full House": "None Detected"}
         
+        # If a Full House is found return that
         full_house = full_house_check(seven_cards)
         if "Full House" in full_house:
             return full_house
         
+        # If a flush is present we know it is a regular flush so we can return it
         if "Flush Detected" in test_flush:
             return flush
+        
+        # Check for a straight
+        def check_straight(cards_arr):
+            straight_list, index, straight_counter = [], 0, 0
+            while index < len(cards_arr):
+                if straight_counter == 5:
+                    break
+                if index == len(cards_arr) - 1:
+                    if cards_arr[index-1][0] - 1 == cards_arr[index][1]:
+                        straight_counter += 1
+                        straight_list.append(cards_arr[index][2])
+                if index != len(cards_arr) - 1:
+                    if cards_arr[index-1][0] - 1 == cards_arr[index][0]:
+                        straight_counter += 1
+                        straight_list.append(cards_arr[index][2])
+                    else:
+                        straight_counter, straight_list = 1, []
+                        straight_list.append(cards_arr[index][2])
+                index += 1
+                print(straight_list)
+            if straight_counter == 5:
+                return {"Straight": straight_list}    
+            return {"No Straight": "None Detected"}            
+
+        straight = check_straight(seven_cards)
+        if "Straight" in straight:
+            return straight
 
         return {"Testing": "Failed"}
     
