@@ -1,5 +1,5 @@
 from flask import Flask
-from flask_restful import Api, Resource
+from flask_restful import Api, Resource, abort
 
 app = Flask(__name__)
 api = Api(app)
@@ -64,153 +64,247 @@ class Poker(Resource):
         table = {"community": [flop1, flop2, flop3, turn, river],
                 "player": [hole1, hole2]
                 }
-
-        # Check for dupliacte cards entered by User (return Error if any are found)
-        def check_dupes():
-            check_for_dupes = {}
-            for card in table["community"]:
-                if card not in check_for_dupes:
-                    check_for_dupes[card] = 1
-                else:
-                    return {"Error": "Duplicate Cards"}
-            for card in table["player"]:
-                if card not in check_for_dupes:
-                    check_for_dupes[card] = 1
-                else:
-                    return {"Error": "Duplicate Cards"}
-            return {"Valid": "Valid Cards"}
-
-        dupe = check_dupes()
-        if "Error" in dupe:
-            return dupe
-        
-        # Add all cards to a list and sort them so we know the cards are in order from high to low
-        # This step is important as this list will be used frequently from here on out
-        seven_cards = [cards[card] for card in table["community"]] # Add community cards
-        seven_cards.append(cards[table["player"][0]]) # Add player hole card
-        seven_cards.append(cards[table["player"][1]]) # Add player hole card
-        seven_cards.sort(key=lambda x: x[0], reverse=True) # Sort the cards in order highest to lowest
-
-        # Check to see if any flush is present
-        def check_misc_flush(my_cards):
-            flush_dict = {} # Dictionary to track each card and it's suit
-            for item in my_cards:
-                if item[1] not in flush_dict:
-                    flush_dict[item[1]] = [item[2]]
-                else:
-                    flush_dict[item[1]].append(item[2])
-            for v in flush_dict.values(): # This loop checks if the dictionary contains a flush
-                if len(v) >= 5: # If any value has 5 or more values a flush is present
-                    flush_list = v[:5] # Since cards are already sorted we can take the first 5 cards
-                    return {"Flush Detected": flush_list}
-            return {"No Flush": "No Flush"}
-        
-        # If a flush is present we call this to check the type of flush
-        def check_flush_type(flush_arr):
-            sf_tracker = 0
-            for i in range(len(flush_arr) - 1): # This loop tells us if we have a straight in our flush list
-                if cards[flush_arr[i]][0] - 1 == cards[flush_arr[i+1]][0]:
-                    sf_tracker += 1
-            if sf_tracker == 4 and cards[flush_arr[0]][0] == 14: # Check for royal flush
-                return {"Royal Flush": flush_arr} # We know it's royal becuase we assigned 14 to be the value of Ace
-            if sf_tracker == 4 and cards[flush_arr[0]][0] != 14: # Check for straight flush
-                return {"Straight Flush": flush_arr} # If an Ace is not present we know it is a straight flush and not royal
-            if sf_tracker != 4: # If no straight is present we know it is a regular flush
-                return {"Flush": flush_arr}
-            return {"No Flush": "None Detected"}
-                
-        # If a royal flush or straight flush is found we return because those are the 2 best poker hands
-        # Otherwise the flush will just be stored in the flush variable
-        test_flush = check_misc_flush(seven_cards)
-        if "Flush Detected" in test_flush:
-            flush = check_flush_type(test_flush["Flush Detected"])
-            if "Royal Flush" in flush:
-                return flush
-            elif "Straight Flush" in flush:
-                return flush
-        """
-        Remember that if a straight flush or royal flush are not found we know we have a regular flush,
-        We can keep this in mind for later because we will check to make sure we don't have some other
-        superior hands (Quads, Full House) before return the flush as the best possible hand
-        """
-        
-        # Check for Four of a Kind
-        def quad_check(all_cards):
-            quad_dict = {}
-            for c in all_cards:
-                if c[0] not in quad_dict:
-                    quad_dict[c[0]] = [c[2]]
-                else:
-                    quad_dict[c[0]].append(c[2])
-            for k, v in quad_dict.items():
-                if len(v) == 4:
-                    for c, n in quad_dict.items():
-                        if c != k:
-                            v += n
-                            return {"Four of a Kind": v}
-            return {"No Four of a Kind": "None Found"}
-        
-        # If Four of a Kind is found we can return that
-        quads = quad_check(seven_cards)
-        if "Four of a Kind" in quads:
-            return quads
-        
-        # Check for Full House
-        def full_house_check(card_arr):
-            full_dict = {}
-            for c in card_arr:
-                if c[0] not in full_dict:
-                    full_dict[c[0]] = [c[2]]
-                else:
-                    full_dict[c[0]].append(c[2])
-            for k, v in full_dict.items():
-                if len(v) == 3:
-                    for c, n in full_dict.items():
-                        if len(n) == 2:
-                            v += n
-                            return {"Full House": v}
-                        elif len(n) > 2 and k != c:
-                            v += n
-                            v.pop()
-                            return {"Full House": v}
-            return {"No Full House": "None Detected"}
-        
-        # If a Full House is found return that
-        full_house = full_house_check(seven_cards)
-        if "Full House" in full_house:
-            return full_house
-        
-        # If a flush is present we know it is a regular flush so we can return it
-        if "Flush Detected" in test_flush:
-            return flush
-        
-        # Check for a straight
-        def check_straight(cards_arr):
-            straight_list, index, straight_counter = [], 0, 0
-            while index < len(cards_arr):
-                if straight_counter == 5:
-                    break
-                if index == len(cards_arr) - 1:
-                    if cards_arr[index-1][0] - 1 == cards_arr[index][1]:
-                        straight_counter += 1
-                        straight_list.append(cards_arr[index][2])
-                if index != len(cards_arr) - 1:
-                    if cards_arr[index-1][0] - 1 == cards_arr[index][0]:
-                        straight_counter += 1
-                        straight_list.append(cards_arr[index][2])
+        try:
+            # Check for dupliacte cards entered by User (return Error if any are found)
+            def check_dupes():
+                check_for_dupes = {}
+                for card in table["community"]:
+                    if card not in check_for_dupes:
+                        check_for_dupes[card] = 1
                     else:
-                        straight_counter, straight_list = 1, []
-                        straight_list.append(cards_arr[index][2])
-                index += 1
-                print(straight_list)
-            if straight_counter == 5:
-                return {"Straight": straight_list}    
-            return {"No Straight": "None Detected"}            
+                        return {"Error": "Duplicate Cards"}
+                for card in table["player"]:
+                    if card not in check_for_dupes:
+                        check_for_dupes[card] = 1
+                    else:
+                        return {"Error": "Duplicate Cards"}
+                return {"Valid": "Valid Cards"}
 
-        straight = check_straight(seven_cards)
-        if "Straight" in straight:
-            return straight
+            dupe = check_dupes()
+            if "Error" in dupe:
+                return dupe
+            
+            # Add all cards to a list and sort them so we know the cards are in order from high to low
+            # This step is important as this list will be used frequently from here on out
+            seven_cards = [cards[card] for card in table["community"]] # Add community cards
+            seven_cards.append(cards[table["player"][0]]) # Add player hole card
+            seven_cards.append(cards[table["player"][1]]) # Add player hole card
+            seven_cards.sort(key=lambda x: x[0], reverse=True) # Sort the cards in order highest to lowest
 
-        return {"Testing": "Failed"}
+            # Check to see if any flush is present
+            def check_misc_flush(my_cards):
+                flush_dict = {} # Dictionary to track each card and it's suit
+                for item in my_cards:
+                    if item[1] not in flush_dict:
+                        flush_dict[item[1]] = [item[2]]
+                    else:
+                        flush_dict[item[1]].append(item[2])
+                for v in flush_dict.values(): # This loop checks if the dictionary contains a flush
+                    if len(v) >= 5: # If any value has 5 or more values a flush is present
+                        flush_list = v[:5] # Since cards are already sorted we can take the first 5 cards
+                        return {"Flush Detected": flush_list}
+                return {"No Flush": "No Flush"}
+            
+            # If a flush is present we call this to check the type of flush
+            def check_flush_type(flush_arr):
+                sf_tracker = 0
+                for i in range(len(flush_arr) - 1): # This loop tells us if we have a straight in our flush list
+                    if cards[flush_arr[i]][0] - 1 == cards[flush_arr[i+1]][0]:
+                        sf_tracker += 1
+                if sf_tracker == 4 and cards[flush_arr[0]][0] == 14: # Check for royal flush
+                    return {"Royal Flush": flush_arr} # We know it's royal becuase we assigned 14 to be the value of Ace
+                if sf_tracker == 4 and cards[flush_arr[0]][0] != 14: # Check for straight flush
+                    return {"Straight Flush": flush_arr} # If an Ace is not present we know it is a straight flush and not royal
+                if sf_tracker != 4: # If no straight is present we know it is a regular flush
+                    return {"Flush": flush_arr}
+                return {"No Flush": "None Detected"}
+                    
+            # If a royal flush or straight flush is found we return because those are the 2 best poker hands
+            # Otherwise the flush will just be stored in the flush variable
+            test_flush = check_misc_flush(seven_cards)
+            if "Flush Detected" in test_flush:
+                flush = check_flush_type(test_flush["Flush Detected"])
+                if "Royal Flush" in flush:
+                    return flush
+                elif "Straight Flush" in flush:
+                    return flush
+            """
+            Remember that if a straight flush or royal flush are not found we know we have a regular flush,
+            We can keep this in mind for later because we will check to make sure we don't have some other
+            superior hands (Quads, Full House) before return the flush as the best possible hand
+            """
+            
+            # Check for Four of a Kind
+            def quad_check(all_cards):
+                quad_dict = {}
+                for c in all_cards:
+                    if c[0] not in quad_dict:
+                        quad_dict[c[0]] = [c[2]]
+                    else:
+                        quad_dict[c[0]].append(c[2])
+                for k, v in quad_dict.items():
+                    if len(v) == 4:
+                        for c, n in quad_dict.items():
+                            if c != k:
+                                v += n[:1]
+                                return {"Four of a Kind": v}
+                return {"No Four of a Kind": "None Found"}
+            
+            # If Four of a Kind is found we can return that
+            quads = quad_check(seven_cards)
+            if "Four of a Kind" in quads:
+                return quads
+            
+            # Check for Full House
+            def full_house_check(card_arr):
+                full_dict = {}
+                for c in card_arr:
+                    if c[0] not in full_dict:
+                        full_dict[c[0]] = [c[2]]
+                    else:
+                        full_dict[c[0]].append(c[2])
+                for k, v in full_dict.items():
+                    if len(v) == 3:
+                        for c, n in full_dict.items():
+                            if len(n) == 2 and k != c:
+                                v += n
+                                return {"Full House": v}
+                            elif len(n) > 2 and k != c:
+                                v += n
+                                v.pop()
+                                return {"Full House": v}
+                return {"No Full House": "None Detected"}
+            
+            # If a Full House is found return that
+            full_house = full_house_check(seven_cards)
+            if "Full House" in full_house:
+                return full_house
+            
+            # If a flush is present we know it is a regular flush so we can return it
+            if "Flush Detected" in test_flush:
+                return flush
+            
+            # Check for a straight
+            def check_straight(cards_arr):
+                straight_list, straight_values = [], set()
+                pointer1, pointer2 = 0, 1
+                while pointer2 < len(cards_arr):
+                    first_num, second_num = cards_arr[pointer1], cards_arr[pointer2]
+                    if first_num[0] - 1 == second_num[0]:
+                        if first_num[0] not in straight_values:
+                            straight_values.add(first_num[0])
+                            straight_list.append(first_num[2])
+                        if second_num[0] not in straight_values:
+                            straight_values.add(second_num[0])
+                            straight_list.append(second_num[2])
+                    elif first_num[0] == second_num[0]:
+                        pass
+                    else:
+                        straight_list = [second_num[2]]
+                        straight_values = set()
+                        straight_values.add(second_num[0])
+                    pointer1 += 1
+                    pointer2 += 1
+                if len(straight_list) >= 5:
+                    return {"Straight": straight_list[:5]}
+                return {"No Straight": "None Detected"}            
+
+            straight = check_straight(seven_cards)
+            if "Straight" in straight:
+                return straight
+            
+            # Check for Three of a Kind
+            def trips_check(seven_arr):
+                trips_dict, trips_arr = {}, []
+                for c in seven_arr:
+                    if c[0] not in trips_dict:
+                        trips_dict[c[0]] = [c[2]]
+                    else:
+                        trips_dict[c[0]].append(c[2])
+                for k, v in trips_dict.items():
+                    if len(v) == 3:
+                        trips_arr += v
+                        for c, n in trips_dict.items():
+                            if c != k and len(trips_arr) < 5:
+                                trips_arr += n
+                if len(trips_arr) == 5:
+                    return {"Three of a Kind": trips_arr}
+                return {"No Three of a Kind": "None Found"}
+
+            trips = trips_check(seven_cards)
+            if "Three of a Kind" in trips:
+                return trips
+            
+            # Check for two pair
+            def check_two_pair(all_cards):
+                two_pair_list, two_pair_dict = [], {}
+                final_cards, card_set = [], set()
+                for card in all_cards:
+                    if card[0] not in two_pair_dict:
+                        two_pair_dict[card[0]] = [card[2]]
+                    else:
+                        two_pair_dict[card[0]].append(card[2])
+                for value in two_pair_dict.values():
+                    if len(value) == 2:
+                        two_pair_list.append(value)
+                if len(two_pair_list) >= 2:
+                    final_cards.append(two_pair_list[0][0])
+                    final_cards.append(two_pair_list[0][1])
+                    final_cards.append(two_pair_list[1][0])
+                    final_cards.append(two_pair_list[1][1])
+                    card_set.add(two_pair_list[0][0])
+                    card_set.add(two_pair_list[0][1])
+                    card_set.add(two_pair_list[1][0])
+                    card_set.add(two_pair_list[1][1])
+                    for c in all_cards:
+                        if c[2] not in card_set:
+                            final_cards.append(c[2])
+                            break
+                    return {"Two Pair": final_cards}
+                return {"No Two Pair": "None Detected"}
+            
+            two_pair = check_two_pair(seven_cards)
+            if "Two Pair" in two_pair:
+                return two_pair
+            
+            # Check for a single pair
+            def check_pair(check_arr):
+                pair_set, pair_list = set(), []
+                pair_dict = {}
+                for c in check_arr:
+                    if c[0] not in pair_dict:
+                        pair_dict[c[0]] = [c[2]]
+                    else:
+                        pair_dict[c[0]].append(c[2])
+                for v in pair_dict.values():
+                    if len(v) == 2:
+                        pair_list.append(v[0])
+                        pair_list.append(v[1])
+                        pair_set.add(v[0])
+                        pair_set.add(v[1])
+                if len(pair_list) == 2:
+                    for card in check_arr:
+                        if card[2] not in pair_set:
+                            pair_list.append(card[2])
+                        if len(pair_list) == 5:
+                            return {"Pair": pair_list}
+                return {"No Pair Found": "None Detected"}
+            
+            pair = check_pair(seven_cards)
+            if "Pair" in pair:
+                return pair
+
+            # Get the 5 highest cards
+            def high_cards(rem_cards):
+                final_cards = [card[2] for card in rem_cards]
+                return {"High Card": final_cards[:5]}
+
+            # Since we made it to end of the function we know the hand entered is only a high card
+            # We return the 5 highest cards as a result
+            high = high_cards(seven_cards)
+            return high
+        
+        except:
+            abort(400, error="Invalid Input")
     
 api.add_resource(Poker, "/<string:hole1>_<string:hole2>/<string:flop1>_<string:flop2>_<string:flop3>_<string:turn>_<string:river>")
