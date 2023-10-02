@@ -10,7 +10,7 @@ idna==3.4
 itsdangerous==1.1.0
 Jinja2==2.11.2
 MarkupSafe==1.1.1
-python-dotenv==1.0.0
+python-dotenv==0.21.1
 pytz==2020.1
 requests==2.31.0
 six==1.15.0
