@@ -65,7 +65,7 @@ class Poker(Resource):
                 "player": [hole1, hole2]
                 }
         try:
-            # Check for dupliacte cards entered by User (return Error if any are found)
+        # Check for dupliacte cards entered by User (return Error if any are found)
             def check_dupes():
                 check_for_dupes = {}
                 for card in table["community"]:
@@ -101,26 +101,74 @@ class Poker(Resource):
                         flush_dict[item[1]].append(item[2])
                 for v in flush_dict.values(): # This loop checks if the dictionary contains a flush
                     if len(v) >= 5: # If any value has 5 or more values a flush is present
-                        flush_list = v[:5] # Since cards are already sorted we can take the first 5 cards
-                        return {"Flush Detected": flush_list}
+                        return {"Flush Detected": v}
                 return {"No Flush": "No Flush"}
             
             # If a flush is present we call this to check the type of flush
             def check_flush_type(flush_arr):
-                sf_tracker = 0
-                for i in range(len(flush_arr) - 1): # This loop tells us if we have a straight in our flush list
-                    if cards[flush_arr[i]][0] - 1 == cards[flush_arr[i+1]][0]:
-                        sf_tracker += 1
-                if sf_tracker == 4 and cards[flush_arr[0]][0] == 14: # Check for royal flush
-                    return {"Royal Flush": flush_arr} # We know it's royal becuase we assigned 14 to be the value of Ace
-                if sf_tracker == 4 and cards[flush_arr[0]][0] != 14: # Check for straight flush
-                    return {"Straight Flush": flush_arr} # If an Ace is not present we know it is a straight flush and not royal
-                if sf_tracker != 4: # If no straight is present we know it is a regular flush
-                    return {"Flush": flush_arr}
-                return {"No Flush": "None Detected"}
+                print(flush_arr)
+                fl_list, fl_values = [], set()
+                pointer1, pointer2 = 0, 1
+                while pointer2 < len(flush_arr):
+                    first_num, second_num = cards[flush_arr[pointer1]], cards[flush_arr[pointer2]]
+                    if first_num[0] - 1 == second_num[0]:
+                        if first_num[0] not in fl_values:
+                            fl_values.add(first_num[0])
+                            fl_list.append(first_num[2])
+                        if second_num[0] not in fl_values:
+                            fl_values.add(second_num[0])
+                            fl_list.append(second_num[2])
+                    elif first_num[0] == second_num[0]:
+                        pass
+                    elif len(fl_list) >= 5:
+                        break
+                    else:
+                        fl_list = [second_num[2]]
+                        fl_values = set()
+                        fl_values.add(second_num[0])
+                    pointer1 += 1
+                    pointer2 += 1
+                fl_values = list(fl_values)
+                print(fl_values)
+                if fl_values[0] == 10 and len(fl_values) >= 5:
+                    return {"Royal Flush": fl_list[:5]}
+                if len(fl_values) >= 5:
+                    return {"Straight Flush": fl_list[:5]}
+                # If no regular Straight/Royal Flush is found  we check for the Wheel Straight Flush (A, 2, 3, 4, 5)
+                wheel_list, wheel_set = [], set()
+                for card in reversed(flush_arr):
+                    curr_card = cards[card]
+                    print(curr_card)
+                    if curr_card[0] == 14:
+                        if card[0] not in wheel_set:
+                            wheel_set.add(curr_card[0])
+                            wheel_list.append(curr_card[2])
+                    elif curr_card[0] == 2:
+                        if curr_card[0] not in wheel_set:
+                            wheel_set.add(curr_card[0])
+                            wheel_list.append(curr_card[2])
+                    elif curr_card[0] == 3:
+                        if curr_card[0] not in wheel_set:
+                            wheel_set.add(curr_card[0])
+                            wheel_list.append(curr_card[2])
+                    elif curr_card[0] == 4:
+                        if curr_card[0] not in wheel_set:
+                            wheel_set.add(curr_card[0])
+                            wheel_list.append(curr_card[2])
+                    elif curr_card[0] == 5:
+                        if curr_card[0] not in wheel_set:
+                            wheel_set.add(curr_card[0])
+                            wheel_list.append(curr_card[2])
+                if len(wheel_list) == 5:
+                    ace = wheel_list.pop()
+                    final_wheel = [str_card for str_card in reversed(wheel_list)]
+                    final_wheel.append(ace)
+                    return {"Straight Flush": final_wheel}
+                # If none of those checks are passed we know to return a regular flush
+                return {"Flush": flush_arr[:5]}
                     
             # If a royal flush or straight flush is found we return because those are the 2 best poker hands
-            # Otherwise the flush will just be stored in the flush variable
+            # Otherwise the flush will just be stored in the flush variable in case it's needed later
             test_flush = check_misc_flush(seven_cards)
             if "Flush Detected" in test_flush:
                 flush = check_flush_type(test_flush["Flush Detected"])
@@ -199,6 +247,8 @@ class Poker(Resource):
                             straight_list.append(second_num[2])
                     elif first_num[0] == second_num[0]:
                         pass
+                    elif len(straight_list) >= 5:
+                        break
                     else:
                         straight_list = [second_num[2]]
                         straight_values = set()
@@ -207,6 +257,34 @@ class Poker(Resource):
                     pointer2 += 1
                 if len(straight_list) >= 5:
                     return {"Straight": straight_list[:5]}
+                # If no regular straight is found check for the Wheel Straight (A, 2, 3, 4, 5)
+                wheel_list, wheel_set = [], set()
+                for card in reversed(cards_arr):
+                    if card[0] == 14:
+                        if card[0] not in wheel_set:
+                            wheel_set.add(card[0])
+                            wheel_list.append(card[2])
+                    elif card[0] == 2:
+                        if card[0] not in wheel_set:
+                            wheel_set.add(card[0])
+                            wheel_list.append(card[2])
+                    elif card[0] == 3:
+                        if card[0] not in wheel_set:
+                            wheel_set.add(card[0])
+                            wheel_list.append(card[2])
+                    elif card[0] == 4:
+                        if card[0] not in wheel_set:
+                            wheel_set.add(card[0])
+                            wheel_list.append(card[2])
+                    elif card[0] == 5:
+                        if card[0] not in wheel_set:
+                            wheel_set.add(card[0])
+                            wheel_list.append(card[2])
+                if len(wheel_list) == 5:
+                    ace = wheel_list.pop()
+                    final_wheel = [str_card for str_card in reversed(wheel_list)]
+                    final_wheel.append(ace)
+                    return {"Straight": final_wheel}
                 return {"No Straight": "None Detected"}            
 
             straight = check_straight(seven_cards)
@@ -303,7 +381,7 @@ class Poker(Resource):
             # We return the 5 highest cards as a result
             high = high_cards(seven_cards)
             return high
-        
+            
         except:
             abort(400, error="Invalid Input")
     
