@@ -1,9 +1,16 @@
-from flask import Flask
+from flask import Flask, Blueprint, render_template
 from flask_restful import Api, Resource, abort
 
 app = Flask(__name__)
 api = Api(app)
 
+# Landing Page
+@app.route("/")
+def home():
+    return render_template("base.html")
+
+# Code Down below is what powers the API 
+# Dictionary of every card with keys to represent the card and tuples with valuable card information
 cards = {
     "2s": (2, "s", "2s"),
     "2c": (2, "c", "2c"),
@@ -58,6 +65,7 @@ cards = {
     "Ah": (14, "h", "Ah"),
     "Ad": (14, "d", "Ad")
 }
+
 
 class Poker(Resource):
     def get(self, hole1, hole2, flop1, flop2, flop3, turn, river):
@@ -386,35 +394,4 @@ class Poker(Resource):
             abort(400, error="Invalid Input")
 
 
-class Home(Resource):
-    def get(self):
-        base = "https://poker1230.pythonanywhere.com/"
-        return {
-            "URL Format": f"{base}<holecard1>/<holecard2>&<communitycard1>/<communitycard2>/<communitycard3>/<communitycard4>/<communitycard5>",
-            "Example": f"{base}5h/5c&10s/Jd/2c/5s/9d",
-            "Use lowercase letters to represent each suit": {
-                "s": "\u2660",
-                "c": "\u2663",
-                "d": "\u2666",
-                "h": "\u2665"
-            },
-            "All 52 Cards": {
-                "Ace": ["As", "Ac", "Ad", "Ah"],
-                "King": ["Ks", "Kc", "Kd", "Kh"],
-                "Queen": ["Qs", "Qc", "Qd", "Qh"],
-                "Jack": ["Js", "Jc", "Jd", "Jh"],
-                "10": ["10s", "10c", "10d", "10h"],
-                "9": ["9s", "9c", "9d", "9h"],
-                "8": ["8s", "8c", "8d", "8h"],
-                "7": ["7s", "7c", "7d", "7h"],
-                "6": ["6s", "6c", "6d", "6h"],
-                "5": ["5s", "5c", "5d", "5h"],
-                "4": ["4s", "4c", "4d", "4h"],
-                "3": ["3s", "3c", "3d", "3h"],
-                "2": ["2s", "2c", "2d", "2h"],
-            }
-        }
-    
-
-api.add_resource(Home, "/")
 api.add_resource(Poker, "/<string:hole1>/<string:hole2>&<string:flop1>/<string:flop2>/<string:flop3>/<string:turn>/<string:river>")

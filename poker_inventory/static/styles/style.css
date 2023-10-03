@@ -1,0 +1,47 @@
+#main_header {
+    text-align: center;
+}
+
+#json_img {
+    height: auto;
+}
+
+.body_text {
+    width: inherit;
+}
+
+@media screen and (max-width: 600px) {
+    .body_text {
+        font-size: 2.5vw
+    }
+    #json_img {
+        width: 50vw;
+    }
+}
+
+@media screen and (max-width: 500px) {
+    .body_text {
+        font-size: 3vw
+    }
+    #json_img {
+        width: 60vw;
+    }
+}
+
+@media screen and (max-width: 400px) {
+    .body_text {
+        font-size: 3.25vw
+    }
+    #json_img {
+        width: 60vw;
+    }
+}
+
+@media screen and (max-width: 300px) {
+    .body_text {
+        font-size: 3.5vw
+    }
+    #json_img {
+        width: 65vw;
+    }
+}

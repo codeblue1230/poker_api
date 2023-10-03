@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<meta name="Description" content="Enter your description here"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="../static/styles/style.css">
+<title>Poker API</title>
+</head>
+<body>
+<div class="container mt-4">
+    <h1 id="main_header">Poker Hand API Documentation</h1>
+    <div class="row">
+        <div class="col-12 text-center mt-3">
+            <h3>Quickstart Guide</h3>
+        </div>
+        <div class="col-12 text-center p-0">
+            <p class="body_text">https://poker1230.pythonanywhere.com/&lt;hole1&gt;/&lt;hole2&gt;&&lt;flop1&gt;/&lt;flop2&gt;/&lt;flop3&gt;/&lt;turn&gt;/&lt;river&gt;</p>
+            <p class="body_text">Example: https://poker1230.pythonanywhere.com/5h/5c&10s/Jd/2c/5s/9d</p>
+            <img id="json_img" src="../static/images/trips.png" alt="JSON object from above example">
+            <p class="body_text">If you visit the example link above the JSON object you see here will be returned.  
+                The key is your poker hand and the value is the 5 best cards that make up your hand.
+                hole1 and hole2 are the user's cards and flop1, flop2, flop3, turn, and river are the community
+                cards on the board
+            </p>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.9.2/umd/popper.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.0/js/bootstrap.min.js"></script>
+</body>
+</html>
