@@ -1,7 +1,9 @@
-from flask import Flask, Blueprint, render_template
+from flask import Flask, render_template
 from flask_restful import Api, Resource, abort
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 api = Api(app)
 
 # Landing Page
