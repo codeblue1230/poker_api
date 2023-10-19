@@ -116,6 +116,7 @@ class Poker(Resource):
             
             # If a flush is present we call this to check the type of flush
             def check_flush_type(flush_arr):
+                print(flush_arr)
                 fl_list, fl_values = [], set()
                 pointer1, pointer2 = 0, 1
                 while pointer2 < len(flush_arr):
@@ -139,8 +140,9 @@ class Poker(Resource):
                     pointer2 += 1
                 fl_values = list(fl_values)
                 print(fl_values)
-                if fl_values[-5] == 10 and len(fl_values) >= 5:
-                    return {"Royal Flush": fl_list[:5]}
+                if len(fl_values) >= 5:
+                    if fl_values[-5] == 10 and len(fl_values) >= 5:
+                        return {"Royal Flush": fl_list[:5]}
                 if len(fl_values) >= 5:
                     return {"Straight Flush": fl_list[:5]}
                 # If no regular Straight/Royal Flush is found  we check for the Wheel Straight Flush (A, 2, 3, 4, 5)
